@@ -94,7 +94,7 @@ class MPass(models.Model):
 
 class Images(models.Model):
     title = models.CharField(max_length=255)
-    data = models.ImageField(upload_to=get_path_upload_photo, null=True)
+    data = models.CharField(max_length=255)
     date_added = models.DateTimeField(auto_now_add=True)
     m_pass = models.ForeignKey(MPass, on_delete=models.CASCADE, related_name='images')
 
