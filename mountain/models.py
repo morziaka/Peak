@@ -5,7 +5,7 @@ from .utils import get_path_upload_photo
 
 # Create your models here.
 check_phone = RegexValidator(regex=r'^\+\d{11}$',
-                              message="Введите номер телефона в корректном формате: +7(111)222-33-44")
+                              message="Введите номер телефона в корректном формате: +71112223344")
 
 
 class MyUser(models.Model):
@@ -45,18 +45,18 @@ class Level(models.Model):
     LEVEL_5 = '3A'
     LEVEL_6 = '3B'
     LEVEL_CHOICES = (
-        ('1A', '1A'),
-        ('1B', '1B'),
-        ('2A', '2A'),
-        ('2B', '2B'),
-        ('3A', '3A'),
-        ('3B', '3B')
+        (LEVEL_1, '1A'),
+        (LEVEL_2, '1B'),
+        (LEVEL_3, '2A'),
+        (LEVEL_4, '2B'),
+        (LEVEL_5, '3A'),
+        (LEVEL_6, '3B')
     )
 
-    winter = models.CharField(max_length=2, choices=LEVEL_CHOICES, default=LEVEL_1)
-    summer = models.CharField(max_length=2, choices=LEVEL_CHOICES, default=LEVEL_1)
-    autumn = models.CharField(max_length=2, choices=LEVEL_CHOICES, default=LEVEL_1)
-    spring = models.CharField(max_length=2, choices=LEVEL_CHOICES, default=LEVEL_1)
+    winter = models.CharField(max_length=2, choices=LEVEL_CHOICES, default=LEVEL_1, null=True, blank=True)
+    summer = models.CharField(max_length=2, choices=LEVEL_CHOICES, default=LEVEL_1, null=True, blank=True)
+    autumn = models.CharField(max_length=2, choices=LEVEL_CHOICES, default=LEVEL_1, null=True, blank=True)
+    spring = models.CharField(max_length=2, choices=LEVEL_CHOICES, default=LEVEL_1, null=True, blank=True)
 
     def __str__(self):
         return f' winter: {self.winter}, summer: {self.summer}, autumn: {self.autumn}, spring: {self.spring}'
@@ -77,7 +77,7 @@ class MPass(models.Model):
     beauty_title = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     other_titles = models.CharField(max_length=255)
-    connect = models.TextField()
+    connect = models.TextField(null=True, blank=True)
     add_time = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=30, choices=CHOICE_STATUS, default="new")
     user = models.ForeignKey(MyUser, on_delete=models.CASCADE, related_name='user')

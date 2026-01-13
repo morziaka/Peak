@@ -1,3 +1,5 @@
+from django.db import DatabaseError
+from django.forms import model_to_dict
 from django.shortcuts import render
 
 from django.http import JsonResponse
@@ -35,70 +37,49 @@ class MPassViewSet(viewsets.ModelViewSet):
     serializer_class = MPassSerializer
     filter_backends = [DjangoFilterBackend]
 
-    # CREATING mpass object
-    @action(detail=True, methods=['post'])
-    def submitData(self, request):
+
+    def create(self, request, *args, **kwargs):
         data = request.data
-
+        serializer = self.get_serializer(data=request.data)
         try:
-            user_data = data.get('user')
-            email = user_data['email']
-            email_exist = MPass.objects.filter(user_id__email=email).exist()
-            valid_user_fields = [
-                user_data['name'] != MPass.objects.filter(user_id__email=email).values('name'),
-                user_data['fam'] != MPass.objects.filter(user_id__email=email).values('fam'),
-                user_data['otc'] != MPass.objects.filter(user_id__email=email).values('otc'),
-                user_data['phone'] != MPass.objects.filter(user_id__email=email).values('phone'),
-            ]
-            if email_exist and any(valid_user_fields):
-                raise serializers.ValidationError({'Этот email уже используется другим пользователем.'})
+            if not serializer.is_valid():
+                return Response(
+                    {
+                        'status': 400,
+                        'message': serializer.errors,
+                        'id': None},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            phone = user_data['phone']
-            phone_exist = MPass.objects.filter(user_id__phone=phone).exist()
-            valid_user_fields = [
-                user_data['name'] != MPass.objects.filter(user_id__phone=phone).values('name'),
-                user_data['fam'] != MPass.objects.filter(user_id__phone=phone).values('fam'),
-                user_data['otc'] != MPass.objects.filter(user_id__phone=phone).values('otc'),
-                user_data['email'] != MPass.objects.filter(user_id__phone=phone).values('email'),
-            ]
-            if phone_exist and any(valid_user_fields):
-                raise serializers.ValidationError({'Этот телефон уже используется другим пользователем.'})
+            serializer.save()
+            return Response(
+                {
+                    'status': 200,
+                    'message': 'Отправлено успешно',
+                    'id': serializer.instance.pk},
+                status=status.HTTP_200_OK
+            )
 
-            coords_data = data.get('coords')
-            level_data = data.get('level')
-            images_data = data.get('images')
-
-            user_serializer = UserSerializer(data=user_data)
-            coords_serializer = CoordSerializer(data=coords_data)
-            level_serializer = LevelSerializer(data=level_data)
-            images_serializers = [ImagesSerializer(data=image_data) for image_data in images_data]
-
-            if user_serializer.is_valid() and coords_serializer.is_valid() and level_serializer.is_valid() and all(
-                    image_serializer.is_valid() for image_serializer in images_serializers):
-                user_instance = user_serializer.save()
-                coords_instance = coords_serializer.save()
-                level_instance = level_serializer.save()
-
-                pereval_data = {
-                    'user': user_instance.id,
-                    'coords': coords_instance.id,
-                    'level': level_instance.id,
-                    **data  # Remaining data
-                }
-
-                pass_serializer = MPassSerializer(data=pereval_data)
-                if pass_serializer.is_valid():
-                    pass_instance = pass_serializer.save()
-
-                    for image_serializer in images_serializers:
-                        image_serializer.save(mpass=pass_instance)
-
-                    return Response({'status': 200, 'message': 'Отправлено успешно', 'id': pass_instance.id},
-                                    status=status.HTTP_200_OK)
-            else:
-                return Response({'status': 400, 'message': 'Bad Request, недостаточно полей', 'id': None},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-        except Exception as e:
+        except DatabaseError as e:
             return Response({'status': 500, 'message': str(e), 'id': None},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    def partial_update(self, request, *args, **kwargs):
+        mpass_obj = self.get_object()
+        mpass_data = request.data
+        serializer = self.get_serializer(mpass_obj, data=mpass_data, partial=True)
+
+        user_dict = model_to_dict(mpass_obj.user)
+        user_dict.pop('id')
+        user_data = mpass_data.get('user')
+
+        if mpass_obj.status != 'new':
+            return Response({"state": 0, "message": "Можно изменять информацию только в статусе 'new'"})
+
+        if user_data and user_dict != user_data:
+            return Response({"state": 0, "message": "Нельзя изменять данные пользователя"})
+
+        if serializer.is_valid():
+            serializer.save()
+        return Response({"state": 1, "message": "Информация успешно обновлена"})

@@ -9,8 +9,13 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv, find_dotenv
+
+
+load_dotenv(find_dotenv())
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'mountain',
     'rest_framework',
+    'django_filters',
     'drf_spectacular',
 ]
 
@@ -78,11 +84,11 @@ WSGI_APPLICATION = 'PeakAPI.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'M0rozova',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.getenv('FSTR_DB_NAME'),
+        'USER': os.getenv('FSTR_DB_LOGIN'),
+        'PASSWORD': os.getenv('FSTR_DB_PASS'),
+        'HOST': os.getenv('FSTR_DB_HOST'),
+        'PORT': os.getenv('FSTR_DB_PORT'),
     },
 }
 
@@ -130,7 +136,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 10,
+
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }

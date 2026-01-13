@@ -1,52 +1,63 @@
 from .models import *
 from rest_framework import serializers
+from drf_writable_nested.serializers import WritableNestedModelSerializer
 
 
-class CoordSerializer(serializers.ModelSerializer):
+class CoordSerializer(WritableNestedModelSerializer):
     class Meta:
         model = Coord
         fields = ['latitude', 'longitude', 'height']
 
 
-class LevelSerializer(serializers.ModelSerializer):
+class LevelSerializer(WritableNestedModelSerializer):
     class Meta:
         model = Level
         fields = ['winter', 'summer', 'autumn', 'spring']
 
 
-class ImagesSerializer(serializers.ModelSerializer):
+class ImagesSerializer(WritableNestedModelSerializer):
+    data = serializers.CharField()
+
     class Meta:
         model = Images
         fields = ['data', 'title']
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(WritableNestedModelSerializer):
     class Meta:
         model = MyUser
         fields = ['email', 'fam', 'name', 'otc', 'phone']
 
 
-class MPassSerializer(serializers.ModelSerializer):
-    user_id = UserSerializer()
-    coords_id = CoordSerializer()
-    level_diff = LevelSerializer(allow_null=True)
+class MPassSerializer(WritableNestedModelSerializer):
+    user = UserSerializer()
+    coords = CoordSerializer()
+    level = LevelSerializer(allow_null=True)
     images = ImagesSerializer(many=True)
+    status = serializers.CharField(read_only=True)
+    add_time = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = MPass
-        fields = ['id', 'user_id', 'coords_id', 'level_diff', 'beauty_title', 'title', 'other_titles', 'connect',
-                  'add_time', 'images']
+        fields = ['beauty_title', 'title', 'other_titles', 'connect', 'add_time', 'status', 'user', 'level', 'coords',
+                  'images']
 
-        # restricts altering user's data while updating pereval
-        def validate(self, data):
-            if self.instance is not None:
-                user_instance = self.instance.user_id
-                user_data = data.get('user_id')
-                valid_user_fields = [
-                    user_instance.email != user_data['email'],
-                    user_instance.full_name != user_data['full_name'],
-                    user_instance.phone != user_data['phone']
-                ]
-                if user_data and any(valid_user_fields):
-                    raise serializers.ValidationError({'Данные нельзя изменить'})
-            return data
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        coords_data = validated_data.pop('coords')
+        level_data = validated_data.pop('level')
+        images_data = validated_data.pop('images')
+
+        user, _ = MyUser.objects.get_or_create(**user_data)
+        coords = Coord.objects.create(**coords_data)
+        level = Level.objects.create(**level_data)
+
+        mpass = MPass.objects.create(user=user, coords=coords, level=level, **validated_data)
+
+        for image_data in images_data:
+            data = image_data.get('data')
+            title = image_data.get('title')
+            Images.objects.create(data=data, title=title, m_pass=mpass)
+
+        return mpass
+
