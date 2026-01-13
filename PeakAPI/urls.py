@@ -22,13 +22,13 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from mountain import views
 
+
 router = routers.DefaultRouter()
 router.register(r'perevals', views.MPassViewSet, basename='perevals')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
-    path('api/', include(router.urls)),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/docs/', SpectacularSwaggerView.as_view(url_name='schema')),
 ]
