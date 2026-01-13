@@ -1,5 +1,5 @@
 """
-URL configuration for PeakAPI1 project.
+URL configuration for PeakAPI project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -14,9 +14,21 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.urls import include, path
 from django.contrib import admin
-from django.urls import path
+from rest_framework import routers
+
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+from mountain import views
+
+router = routers.DefaultRouter()
+router.register(r'perevals', views.MPassViewSet, basename='perevals')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include(router.urls)),
+    path('api/', include(router.urls)),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/docs/', SpectacularSwaggerView.as_view(url_name='schema')),
 ]
