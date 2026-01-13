@@ -8,6 +8,8 @@ from rest_framework import viewsets, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
+from rest_framework.schemas import coreapi
+
 from .serializers import *
 
 
@@ -35,7 +37,7 @@ class ImageViewset(viewsets.ModelViewSet):
 class MPassViewSet(viewsets.ModelViewSet):
     queryset = MPass.objects.all()
     serializer_class = MPassSerializer
-    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ('user__email', )
 
 
     def create(self, request, *args, **kwargs):
@@ -83,3 +85,9 @@ class MPassViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
         return Response({"state": 1, "message": "Информация успешно обновлена"})
+
+    def get_schema_fields(self, view):
+        fields = super().get_schema_fields(view)
+        if hasattr(view, "filter_fields"):
+            fields += view.filter_fields
+        return [coreapi.Field(name=field, location='query', required=False, type='string', ) for field in fields]
